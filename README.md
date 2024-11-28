@@ -103,11 +103,11 @@ If you have issues running the software, contact [x2022awi@stfx.ca](mailto:x2022
 
 # Citation
 ```bibtex
-@software{insert_name_here,
+@software{jkendall-peft-vision,
   author = {John Kendall},
   title = {PEFT Vision},
   year = {2024},
-  url = {https://github.com/johnkxl/inser_name_here},
+  url = {https://github.com/johnkxl/peft-vision},
   version = {0.0.0}
 }
 ```
