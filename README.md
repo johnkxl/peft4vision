@@ -10,9 +10,9 @@
 
 
 # Installation
-*Maybe be able to clone a GitHub repo??*
+Clone this repository:
 ```bash
-git clone https://github.com/johnkxl/###insert_name_here###.git 
+git clone https://github.com/johnkxl/peft-vision.git
 ```
 Create a virtual environment using:
 ```bash
@@ -101,7 +101,6 @@ Make sure `df` is the dataset dedicated to testing. Using the file from the earl
 
 If you have issues running the software, contact [x2022awi@stfx.ca](mailto:x2022awi@stfx.ca).
 
-
 # Citation
 ```bibtex
 @software{insert_name_here,
@@ -112,3 +111,7 @@ If you have issues running the software, contact [x2022awi@stfx.ca](mailto:x2022
   version = {0.0.0}
 }
 ```
+
+# License
+
+This project is licensed under the MIT license.
