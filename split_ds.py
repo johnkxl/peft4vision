@@ -26,21 +26,21 @@ def main():
 
     train_valid, test = split_dataset(df, TARGET, TRAIN_SIZE)
 
-    train_valid.to_parquet(OUTDIR / "train_valid.parquet")
-    test.to_parquet(OUTDIR / "test.parquet")
+    train_valid.to_parquet(OUTDIR / "train.parquet", index=False)
+    test.to_parquet(OUTDIR / "test.parquet", index=False)
 
-    print(f"Saved {100 * TRAIN_SIZE:.2f}% to train_valid.parquet")
+    print(f"Saved {100 * TRAIN_SIZE:.2f}% to train.parquet")
     print(f"Saved {100 * (1 - TRAIN_SIZE):.2f}% to test.parquet")
 
     train_valid = train_valid[['image', TARGET]]
     train_valid.rename(columns={TARGET: "target"}, inplace=True)
-    train_valid.to_parquet(OUTDIR / "train_valid_image_target.parquet")
+    train_valid.to_parquet(OUTDIR / "train_image_target.parquet", index=False)
 
     test = test[['image', TARGET]]
     test.rename(columns={TARGET: "target"}, inplace=True)
-    test.to_parquet(OUTDIR / "test_image_target.parquet")
+    test.to_parquet(OUTDIR / "test_image_target.parquet", index=False)
 
-    print(f"Saved {100 * TRAIN_SIZE:.2f}% to train_valid_image_target.parquet")
+    print(f"Saved {100 * TRAIN_SIZE:.2f}% to train_image_target.parquet")
     print(f"Saved {100 * (1 - TRAIN_SIZE):.2f}% to test_image_target.parquet")
 
     return

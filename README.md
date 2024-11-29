@@ -38,8 +38,8 @@ python split_ds.py \
 The dataset splits will be stored in a directory indicated by `OUTDIR` with the following structure:
 ```plaintext
 📂 OUTDIR/
-├── train_ds.parquet
-├── train_ds_image_target.parquet
+├── train.parquet
+├── train_image_target.parquet
 ├── test.paqrquet
 └── test_image_target.parquet
 ```
@@ -69,7 +69,7 @@ The model and image preprocessor will be stored in the directory with the follow
 ## Train PEFT Adapter
 To train the PEFT adapter, use the following command:
 ```bash
-python train_peft.py \ 
+python df-train_peft.py \ 
     --train_ds TRAIN_DS \
     --test_size 0.111 \
     --use_fp16

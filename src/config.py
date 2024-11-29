@@ -22,6 +22,6 @@ CONFIG = {
         "logging_steps": 10,
         "load_best_model_at_end": True,
         "metric_for_best_model": "accuracy",
-        "label_names": ["target"]
+        "label_names": ["labels"]
     },
 }
