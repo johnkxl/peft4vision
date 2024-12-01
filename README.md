@@ -72,7 +72,7 @@ The model and image preprocessor will be stored in the directory with the follow
 ## Train PEFT Adapter
 To train the PEFT adapter, use the following command:
 ```bash
-python df-train_peft.py \ 
+python train_peft.py \ 
     --train_ds TRAIN_DS \
     --test_size 0.111 \
     --use_fp16
@@ -93,7 +93,7 @@ The adapter is saved in the `./downloaded_models/siglip_so400m_patch14_384` dire
 ## Extract Embeddings
 To extract image embeddings from your dataset use 
 ```bash
-python df-peft-embed.py \
+python peft-embed.py \
     --df df_path \
     --target target \
     --out outname.parquet
