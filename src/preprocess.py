@@ -13,14 +13,21 @@ from torchvision.transforms import (
 )
 
 
-def load_and_split_dataset(path, target: str, test_size=0.1) -> tuple[Dataset, Dataset, dict[str,int], dict[int,str]]:
+def load_and_split_dataset(path, target: str, test_size=0.1) -> tuple[Dataset, Dataset, dict[int,int], dict[int,int]]:
     dataset = load_dataset("parquet", data_files=[path])
     
     labels: set[str] = set(dataset['train'][target])
     label2id, id2label = dict(), dict()
-    for i, label in enumerate(labels):
-        label2id[label] = i
-        id2label[i] = label
+    
+    # for i, label in enumerate(labels):
+    #     label2id[label] = i
+    #     id2label[i] = label
+
+    # This is obviously unnessecary, but it'll do for now
+    # (changed bc input labels are now in [0, c-1], c:=number of label classes)
+    for label in labels:
+        label2id[label] = label
+        id2label[label] = label
     
     splits = dataset['train'].train_test_split(test_size=test_size)
 

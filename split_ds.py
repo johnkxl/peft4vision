@@ -2,6 +2,7 @@ from sklearn.model_selection import train_test_split
 from pathlib import Path
 from pandas import DataFrame, read_parquet
 from argparse import ArgumentParser
+import json
 
 parser = ArgumentParser(description="Randomly split dataset into train and test sets with similar target distributions")
 
@@ -23,6 +24,13 @@ def main():
     OUTDIR.mkdir(parents=True, exist_ok=True)
 
     df: DataFrame = read_parquet(DF_PATH)
+
+    # Map labels to [0, c-1], c:=number of target classes to match embeddeding format requirements
+    label2id = {label: i for i, label in enumerate(df[TARGET].unique())}
+    df[TARGET] = df[TARGET].map(label2id)
+    with open(OUTDIR / "label2id.json", 'w') as outfile:
+        json.dump(label2id, outfile)
+        print(f'Saved mappings for target "{TARGET} as label2id.json')
 
     train_valid, test = split_dataset(df, TARGET, TRAIN_SIZE)
 
