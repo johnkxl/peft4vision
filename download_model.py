@@ -1,6 +1,4 @@
 from pathlib import Path
-from transformers import AutoModelForImageClassification, AutoImageProcessor
-
 from typing import cast
 
 from transformers import AutoModel, AutoProcessor, AutoTokenizer
@@ -56,7 +54,10 @@ def load_siglip_offline(peft=False) -> tuple[SiglipModel, SiglipProcessor]:
     )
 
     if peft:
-        model = PeftModel.from_pretrained(model, SIGLIP_PEFT_ADAPTER)
+        model = cast(
+            SiglipModel,            
+            PeftModel.from_pretrained(model, SIGLIP_PEFT_ADAPTER)
+        )
 
     return model, tokenizer
 
