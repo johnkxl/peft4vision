@@ -17,6 +17,8 @@ def main():
     parser.add_argument('--train_ds', type=Path, required=True, help='Path to training dataset.')
     parser.add_argument('--test_size', type=float, default=0.111, help='Validation split size.')
     parser.add_argument('--use_fp16', action='store_true', help='Enable FP16 training. Requires a GPU.')
+    parser.add_argument('--num_epochs', type=int, default=5, help='Number of epochs to run. Set to 5 by default.')
+    parser.add_argument('--learn_rate', type=float, default=3e-2, help='Learning rate. Set to 3e-2 by default.')
     args = parser.parse_args()
 
     # Check for GPU and configure FP16
@@ -50,7 +52,19 @@ def main():
 
     # Prepare training arguments
     train_args = TrainingArguments(
-        **CONFIG["train_args"],
+        output_dir="finetuned-lora-model",  # Directory to save model
+        remove_unused_columns=False,
+        eval_strategy="epoch",
+        save_strategy="epoch",
+        learning_rate=args.learn_rate,
+        per_device_train_batch_size=8,
+        gradient_accumulation_steps=4,
+        per_device_eval_batch_size=8,
+        num_train_epochs=args.num_epochs,
+        logging_steps=10,
+        load_best_model_at_end=True,
+        metric_for_best_model="accuracy",
+        label_names=["labels"],
         fp16=use_fp16,
     )
 
@@ -71,7 +85,7 @@ def main():
 
     # Train and evaluate
     trainer.train()
-    trainer.evaluate()
+    print("Evaluate PEFT-adapted mode:", trainer.evaluate())
 
     # Save PEFT adapter
     lora_model.save_pretrained(CONFIG["siglip_peft_adapter"])
