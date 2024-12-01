@@ -1,4 +1,4 @@
-# PEFT Vision
+# PEFT4vision
 
 ### Developed for use in CSCI 444 and to serve as a resource/tutorial for other students.
 
@@ -31,13 +31,16 @@ Split your dataset into training and testing sets. The training set is recommend
 ```bash
 python split_ds.py \
     --df DF \
-    --target TARGET \
-    --train_size 0.9 \
-    --outdir OUTDIR
+    --target <TARGET> \
+    --train_size <train_size> \
+    --outdir <OUTDIR>
 ```
+The recommended `train_size` is `0.9`.
+
 The dataset splits will be stored in a directory indicated by `OUTDIR` with the following structure:
 ```plaintext
 📂 OUTDIR/
+├── label2id.json
 ├── train.parquet
 ├── train_image_target.parquet
 ├── test.paqrquet
