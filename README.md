@@ -106,11 +106,11 @@ If you have issues running the software, contact [x2022awi@stfx.ca](mailto:x2022
 
 # Citation
 ```bibtex
-@software{jkendall-peft-vision,
+@software{jkendall-peft4vision,
   author = {John Kendall},
-  title = {PEFT Vision},
+  title = {PEFT4vision},
   year = {2024},
-  url = {https://github.com/johnkxl/peft-vision},
+  url = {https://github.com/johnkxl/peft4vision},
   version = {0.0.0}
 }
 ```
