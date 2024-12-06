@@ -43,21 +43,17 @@ def download_siglip_model() -> None:
 
 def load_siglip_offline(peft=False) -> tuple[SiglipModel, SiglipProcessor]:
     """Returns model and tokenizer. The model is the peft trained model, `peft` set to `True`."""
+    model = AutoModel.from_pretrained(SIGLIP_MODEL, local_files_only=True)
 
-    model = cast(
-        SiglipModel,
-        AutoModel.from_pretrained(SIGLIP_MODEL, local_files_only=True),
-    )
     tokenizer = cast(
         SiglipProcessor,
         AutoProcessor.from_pretrained(SIGLIP_PREPROCESSOR, local_files_only=True),
     )
 
     if peft:
-        model = cast(
-            SiglipModel,            
-            PeftModel.from_pretrained(model, SIGLIP_PEFT_ADAPTER)
-        )
+        model = PeftModel.from_pretrained(model, SIGLIP_PEFT_ADAPTER)
+    
+    model = cast(SiglipModel, model)
 
     return model, tokenizer
 

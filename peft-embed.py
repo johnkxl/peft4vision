@@ -8,17 +8,15 @@ from argparse import ArgumentParser
 from pathlib import Path
 import os
 
-parser = ArgumentParser(description="Extract image embeddings")
+parser = ArgumentParser(description="Extract image embeddings.")
 
-parser.add_argument('--df', type=Path, required=True, help='Dataset path of test set.')
-parser.add_argument('--target', type=str, required=True, help='Target for classifiction.')
+parser.add_argument('--df', type=Path, required=True, help='Dataset path of test set. Must be a .parquet file with only two columns, "image" and "target".')
 parser.add_argument('--out', type=Path, required=True, help='Destination file name (.parquet).')
 
 args = parser.parse_args()
 
 DF_PATH = args.df
 OUTFILE = args.out
-TARGET = args.target
 
 
 def main() -> None:
@@ -33,7 +31,7 @@ def main() -> None:
 
     # Use df-embed to extract image embeddings
     ds = VisionDataset(datapath=DF_PATH, name=None)
-    model, processor = load_siglip_offline(peft=False)
+    model, processor = load_siglip_offline(peft=True)
     
     df = get_embeddings(
         ds=ds,  # type: ignore
