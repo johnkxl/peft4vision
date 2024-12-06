@@ -139,7 +139,7 @@ def main():
             optimizer.step()
             running_loss += loss.item()
 
-            # Calculate accuracy (if it's a classification task)
+            # Calculate accuracy
             _, predicted = torch.max(logits, 1)
             correct_predictions += (predicted == labels).sum().item()
             total_predictions += labels.size(0)

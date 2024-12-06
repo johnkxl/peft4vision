@@ -61,8 +61,8 @@ class EarlyStopping:
             self.best_loss = val_loss
             self.counter = 0
 
-
-def evaluate(peft_model, valid_loader, criterion, device):
+from peft import PeftModel
+def evaluate(peft_model: PeftModel, valid_loader, criterion, device):
     """Evaluate the model on the validation set."""
     peft_model.eval()  # Set the model to evaluation mode
     val_loss = 0
@@ -75,12 +75,12 @@ def evaluate(peft_model, valid_loader, criterion, device):
             labels = labels.to(device)
 
             # Forward pass
-            outputs = peft_model(pixel_values=pixel_values)
-            loss = criterion(outputs.logits, labels)
+            outputs = peft_model.vision_model(pixel_values=pixel_values)
+            loss = criterion(outputs.pooler_output, labels)
             val_loss += loss.item()
 
             # Calculate accuracy
-            _, predicted = torch.max(outputs.logits, 1)
+            _, predicted = torch.max(outputs.pooler_output, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
