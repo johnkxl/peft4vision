@@ -25,6 +25,18 @@ source .peft_venv/bin/activate
 **NOTE**: Package installing doesn't always work when running `install_local.sh`, so just ignore complaints output in the terminal and use `pip install package_name` for each package missing or being complained about.
 
 # Usage
+## Clean Dataset
+
+Remove undersampled target variables with the following command
+```bash
+python drop_samples.py \
+    --df <dataset_path> \
+    --target <target> \
+    --out <outname>
+```
+This ensures `df-analyze` has sufficient samples for all target classes.
+
+
 ## Split Dataset
 
 Split your dataset into training and testing sets. The training set is recommended to be 90% of your dataset, with the remaining 10% for testing. Your dataset should be initial in stored in a `.parquet` file with an `images` column of type `bytes`. To split your dataset, run the following command:
@@ -73,13 +85,14 @@ The model and image preprocessor will be stored in the directory with the follow
 To train the PEFT adapter, use the following command:
 ```bash
 python train_peft.py \ 
-    --train_ds TRAIN_DS \
-    --test_size 0.111 \
-    --use_fp16
+    --train_ds <TRAIN_DS> \
+    --test_size [test_size=0.111] \
+    --num_epochs [num_epochs=5] \
+    --learn_rate [learn_rate=5e-5] \
+    --batch_size [batch-size=16] \
+    --log_interval [log_interval=10] 
 ```
-The `test_size` was indicated expclicitly here, however by default, the training set is assumed to be 90% of the original dataset, and for 80% to be devoted to training the PEFT adapter, `test_val=0.111`.
-
-`use_fp16` requires a GPU.
+For more information on the CLIs, use `python train-peft.py --help`
 
 The adapter is saved in the `./downloaded_models/siglip_so400m_patch14_384` directory as
 ```plaintext
@@ -94,9 +107,8 @@ The adapter is saved in the `./downloaded_models/siglip_so400m_patch14_384` dire
 To extract image embeddings from your dataset use 
 ```bash
 python peft-embed.py \
-    --df df_path \
-    --target target \
-    --out outname.parquet
+    --df <df_path> \
+    --out <outname.parquet>
 ```
 Make sure `df` is the dataset dedicated to testing. Using the file from the earlier split, it should be called `test_image_target.parquet`.
 
@@ -111,7 +123,7 @@ If you have issues running the software, contact [x2022awi@stfx.ca](mailto:x2022
   title = {PEFT4vision},
   year = {2024},
   url = {https://github.com/johnkxl/peft4vision},
-  version = {0.0.0}
+  version = {1.0.0}
 }
 ```
 
