@@ -1,6 +1,4 @@
-from transformers import Trainer
 import torch
-import numpy as np
 
 from PIL import Image
 from io import BytesIO
@@ -61,8 +59,20 @@ class EarlyStopping:
             self.best_loss = val_loss
             self.counter = 0
 
-from peft import PeftModel
-def evaluate(peft_model: PeftModel, valid_loader, criterion, device):
+
+def print_trainable_parameters(model) -> None:
+        trainable_params = 0
+        all_param = 0
+        for _, param in model.named_parameters():
+            all_param += param.numel()
+            if param.requires_grad:
+                trainable_params += param.numel()
+        print(
+            f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param:.2f}"
+        )
+
+
+def evaluate(peft_model, valid_loader, criterion, device) -> tuple[float, float]:
     """Evaluate the model on the validation set."""
     peft_model.eval()  # Set the model to evaluation mode
     val_loss = 0

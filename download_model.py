@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import cast
 
-from transformers import AutoModel, AutoProcessor, AutoTokenizer
+from transformers import AutoModel, AutoProcessor
 from transformers.models.siglip.modeling_siglip import SiglipModel
 from transformers.models.siglip.processing_siglip import SiglipProcessor
 from peft import PeftModel
@@ -12,7 +12,7 @@ SIGLIP_PATH = ROOT / "downloaded_models/siglip_so400m_patch14_384/"
 
 SIGLIP_PEFT_ADAPTER = SIGLIP_PATH / "peft_adapter"
 
-SIGLIP_MODEL = ROOT / SIGLIP_PATH / "model"
+SIGLIP_MODEL = SIGLIP_PATH / "model"
 SIGLIP_MODEL_FILES = [
     SIGLIP_MODEL / "config.json",
     SIGLIP_MODEL / "model.safetensors",
@@ -51,6 +51,7 @@ def load_siglip_offline(peft=False) -> tuple[SiglipModel, SiglipProcessor]:
     )
 
     if peft:
+        # Wrap the model with the PEFT adapter.
         model = PeftModel.from_pretrained(model, SIGLIP_PEFT_ADAPTER)
     
     model = cast(SiglipModel, model)

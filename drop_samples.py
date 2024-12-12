@@ -15,7 +15,7 @@ target = opts.target
 
 
 def main():
-    df = pd.read_parquet(ds_path)
+    df: pd.DataFrame = pd.read_parquet(ds_path)
 
     drop_count = 0
     drop_list = []
@@ -33,6 +33,7 @@ def main():
 
     print("Total dropped:", drop_count)
     print("New sample count is:", df.shape[0])
+    print("Target classes remaining:", df[target].nunique())
 
 
 if __name__ == "__main__":

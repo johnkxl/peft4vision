@@ -12,7 +12,7 @@ from tqdm import tqdm
 from peft import LoraConfig, get_peft_model
 from datasets import load_dataset
 
-from src.train_utils import ImageDataset, EarlyStopping, evaluate
+from src.train_utils import ImageDataset, EarlyStopping, evaluate, print_trainable_parameters
 from download_model import load_siglip_offline, SIGLIP_PEFT_ADAPTER
 
 
@@ -57,7 +57,7 @@ def main():
 
     # Define a PEFT configuration using LoRA
     peft_config = LoraConfig(
-        task_type="IMAGE_CLASSIFICATION",  # Define the task type
+        task_type="IMAGE_CLASSIFICATION",  # Define the task type (delete this is causing errors)
         inference_mode=False,              # Enable training
         r=16,                              # Low-rank dimension
         lora_alpha=32,                     # Scaling factor
@@ -72,6 +72,7 @@ def main():
 
     # Wrap the base model with the PEFT model
     peft_model = get_peft_model(base_model, peft_config)
+    print_trainable_parameters(peft_model)
 
     # Move the PEFT model to the selected device
     device = torch.device(DEVICE_TYPE)
