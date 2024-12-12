@@ -48,6 +48,5 @@ git+https://github.com/akolesnikoff/panopticapi.git@mute
 overrides
 tensorflow-cpu
 tfds-nightly
-tensorflow-text
 tensorflow-gan
 pycocoevalcap
