@@ -12,7 +12,7 @@
 # Installation
 Clone this repository:
 ```bash
-git clone https://github.com/johnkxl/peft-vision.git
+git clone https://github.com/johnkxl/peft4vision.git
 ```
 Create a virtual environment using:
 ```bash
