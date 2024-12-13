@@ -1,8 +1,9 @@
-from sklearn.model_selection import train_test_split
+import json
 from pathlib import Path
 from pandas import DataFrame, read_parquet
 from argparse import ArgumentParser, RawTextHelpFormatter
-import json
+
+from src.dataset import split_dataset
 
 parser = ArgumentParser(
     description="Randomly split dataset into train and test sets with similar target distributions",
@@ -64,51 +65,6 @@ def main():
     print(f"Saved {100 * (1 - TRAIN_SIZE):.2f}% to test_image_target.parquet")
 
     return
-
-
-def split_dataset(df: DataFrame, target: str, train_size: float, grouper: str = None) -> tuple[DataFrame, DataFrame]:
-    """
-    Split a dataset into training and validation sets, with optional grouping by a specific column.
-
-    Args:
-        df (DataFrame): The input dataset.
-        target (str): The column name representing the target variable for stratification.
-        train_size (float): Proportion of the data to use for training.
-        grouper (str, optional): Column name to group by for splitting. Defaults to None.
-
-    Returns:
-        tuple[DataFrame, DataFrame]: Training and validation DataFrames.
-    """
-    X_train: DataFrame
-    X_val: DataFrame
-
-    if grouper:
-        # Create datafram with one row per unique leaf.
-        groups = df.groupby(grouper).first().reset_index()
-        # Perform split on the group-level data.
-        train_ids, val_ids = train_test_split(
-            groups[grouper],
-            test_size=1-train_size,
-            stratify=groups[target],  # Stratify based on target
-            random_state=42           # For reproducibility
-        )
-        # Create trrain and test splits by IDs assigned to each.
-        X_train = df[df[grouper].isin(train_ids)]
-        X_val = df[df[grouper].isin(val_ids)]
-
-    else:
-        # Standard split
-        X_train, X_val = train_test_split(
-            df,
-            test_size=1-train_size,
-            stratify=df[target],  # Stratify based on target
-            random_state=42       # For reproducibility
-        )
-
-    print("Training set size:", X_train.shape)
-    print("Validation set size:", X_val.shape)
-
-    return X_train, X_val
 
 
 if __name__ == "__main__":
