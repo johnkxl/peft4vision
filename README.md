@@ -88,6 +88,7 @@ To train the PEFT adapter, use the following command:
 python train_peft.py \ 
     --train_ds <TRAIN_DS> \
     --test_size [test_size=0.111] \
+    --grouper [grouper=None] \
     --num_epochs [num_epochs=5] \
     --learn_rate [learn_rate=5e-5] \
     --batch_size [batch-size=16] \
