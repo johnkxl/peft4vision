@@ -97,3 +97,69 @@ def evaluate(peft_model, valid_loader, criterion, device) -> tuple[float, float]
     val_accuracy = correct / total
     val_loss = val_loss / len(valid_loader)
     return val_loss, val_accuracy
+
+
+class PerformanceLogger:
+    def __init__(self):
+        self.log_data = {
+            "epoch": [],
+            "batch": [],
+            "batch_loss": [],
+            "batch_accuracy": [],
+            "avg_loss": [],
+            "avg_accuracy": [],
+            "val_loss": [],
+            "val_accuracy": []
+        }
+
+    def log_batch(self, epoch, batch, batch_loss, batch_accuracy, avg_loss, avg_accuracy):
+        """Log batch-wise metrics."""
+        self.log_performance(
+            self,
+            epoch=epoch,
+            batch=batch,
+            batch_loss=batch_loss,
+            batch_accuracy=batch_accuracy,
+            avg_loss=avg_loss,
+            avg_accuracy=avg_accuracy,
+            val_loss=None,  # Placeholder for validation metrics
+            val_accuracy=None,
+        )
+
+    def log_epoch(self, epoch, avg_loss, avg_accuracy, val_loss, val_accuracy):
+        """Log end-of-epoch metrics."""
+        self.log_performance(
+            self,
+            epoch=epoch,
+            batch=None,  # No batch info for epoch-level logging
+            batch_loss=None,
+            batch_accuracy=None,
+            avg_loss=avg_loss,
+            avg_accuracy=avg_accuracy,
+            val_loss=val_loss,
+            val_accuracy=val_accuracy,
+        )
+    
+    def log_performance(self, epoch, batch, batch_loss, batch_accuracy, avg_loss, avg_accuracy, val_loss, val_accuracy):
+        self.log_data["epoch"].append(epoch)
+        self.log_data["batch"].append(batch)
+        self.log_data["batch_loss"].append(batch_loss)
+        self.log_data["batch_accuracy"].append(batch_accuracy)
+        self.log_data["avg_loss"].append(avg_loss)
+        self.log_data["avg_accuracy"].append(avg_accuracy)
+        self.log_data["val_loss"].append(val_loss)
+        self.log_data["val_accuracy"].append(val_accuracy)
+
+    def save_to_csv(self, file_path):
+        """Save the logged data to a CSV file."""
+        from pandas import DataFrame
+        df = DataFrame(self.log_data)
+        df.to_csv(file_path, index=False)
+        print(f"Saved performance log to {file_path}")
+
+    def save_to_parquet(self, file_path):
+        """Save the logged data to a Parquet file."""
+        from pandas import DataFrame
+        df = DataFrame(self.log_data)
+        df.to_parquet(file_path, index=False)
+        print(f"Saved performance log to {file_path}")

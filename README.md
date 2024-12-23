@@ -45,7 +45,7 @@ python split_ds.py \
     --df DF \
     --target <TARGET> \
     --train_size <train_size> \
-    --groupby [grouper] \
+    --grouper [grouper] \
     --outdir <OUTDIR>
 ```
 The recommended `train_size` is `0.9`.

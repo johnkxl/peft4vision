@@ -1,23 +1,29 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawTextHelpFormatter
 from pathlib import Path
+
 import logging
+from tqdm import tqdm
 
 import torch
 from torch.utils.data import DataLoader
 import torch.nn as nn
 from torch.optim import Adam
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from tqdm import tqdm
 
 from peft import LoraConfig, get_peft_model
-from datasets import load_dataset
 
-from src.train_utils import ImageDataset, EarlyStopping, evaluate, print_trainable_parameters
 from src.dataset import load_dataset_splits
 from download_model import load_siglip_offline, SIGLIP_PEFT_ADAPTER
+from src.train_utils import (
+    ImageDataset,
+    EarlyStopping,
+    evaluate,
+    print_trainable_parameters,
+    PerformanceLogger
+)
 
 
-parser = ArgumentParser(description='Fine-tune PEFT adapter.')
+parser = ArgumentParser(description='Fine-tune PEFT adapter.', formatter_class=RawTextHelpFormatter)
 parser.add_argument('--train_ds', type=Path, required=True, help='Path to training dataset.')
 GROUP_HELP_STR = """
 The (string) name of the grouping variable (if one is present) which will be
@@ -46,7 +52,11 @@ elif torch.backends.mps.is_available():
     DEVICE_TYPE = "mps"
 
 # Set up logging configuration
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s %(message)s', 
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -64,11 +74,10 @@ def main():
 
     # Define a PEFT configuration using LoRA
     peft_config = LoraConfig(
-        task_type="IMAGE_CLASSIFICATION",  # Define the task type (delete this is causing errors)
-        inference_mode=False,              # Enable training
-        r=16,                              # Low-rank dimension
-        lora_alpha=32,                     # Scaling factor
-        lora_dropout=0.1,                  # Dropout
+        inference_mode=False,  # Enable training
+        r=16,                  # Low-rank dimension
+        lora_alpha=32,         # Scaling factor
+        lora_dropout=0.1,      # Dropout
         target_modules=[
             # "k_proj",
             "v_proj",
@@ -81,101 +90,138 @@ def main():
     peft_model = get_peft_model(base_model, peft_config)
     print_trainable_parameters(peft_model)
 
-    # # Move the PEFT model to the selected device
-    # device = torch.device(DEVICE_TYPE)
-    # peft_model = peft_model.to(device)
+    # Move the PEFT model to the selected device
+    device = torch.device(DEVICE_TYPE)
+    peft_model = peft_model.to(device)
 
-    # # Wrap datasets
-    # train_dataset = ImageDataset(train_ds, processor)
-    # valid_dataset = ImageDataset(valid_ds, processor)
+    # Wrap datasets
+    train_dataset = ImageDataset(train_ds, processor)
+    valid_dataset = ImageDataset(valid_ds, processor)
 
-    # # Create DataLoaders
-    # train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    # valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False)
+    # Create DataLoaders
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+    valid_loader = DataLoader(valid_dataset, batch_size=args.batch_size, shuffle=False)
 
-    # # Training utils
-    # criterion = nn.CrossEntropyLoss()  # Loss function
-    # optimizer = Adam(peft_model.parameters(), lr=LEARN_RATE)  # Updates parameters
+    # Training utils
+    criterion = nn.CrossEntropyLoss()  # Loss function
+    optimizer = Adam(peft_model.parameters(), lr=LEARN_RATE)  # Updates parameters
 
-    # scheduler = ReduceLROnPlateau(
-    #     optimizer,                  # Optimizer instance
-    #     mode='min',                 # Minimizing validation loss
-    #     factor=0.1,                 # Multiply LR by this factor on plateau
-    #     patience=3,                 # Number of epochs to wait before reducing LR
-    #     verbose=True                # Print LR reduction messages
-    # )
+    scheduler = ReduceLROnPlateau(
+        optimizer,                  # Optimizer instance
+        mode='min',                 # Minimizing validation loss
+        factor=0.1,                 # Multiply LR by this factor on plateau
+        patience=3,                 # Number of epochs to wait before reducing LR
+        verbose=True                # Print LR reduction messages
+    )
 
-    # NUM_EPOCHS = args.num_epochs    # Maximum number of epochs
-    # patience = 5                    # Patience for early stopping
-    # delta = 0.001                   # Minimum improvement for early stopping
+    NUM_EPOCHS = args.num_epochs    # Maximum number of epochs
+    patience = 5                    # Patience for early stopping
+    delta = 0.001                   # Minimum improvement for early stopping
 
-    # # Initialize early stopping
-    # early_stopping = EarlyStopping(patience=patience, delta=delta, verbose=True)
+    # Initialize early stopping
+    early_stopping = EarlyStopping(patience=patience, delta=delta, verbose=True)
 
-    # # Log the start of training
-    # logger.info("Training started.")
-    # logger.info(f"Model architecture: {type(base_model).__name__}")
-    # logger.info(f"Using device: {device}")
-    # log_interval = args.log_interval
+    # Log the start of training
+    logger.info("Training started.")
+    logger.info(f"Model architecture: {type(base_model).__name__}")
+    logger.info(f"Using device: {device}")
+    log_interval = args.log_interval
 
-    # for epoch in range(NUM_EPOCHS):
-    #     logger.info(f"Epoch {epoch + 1}/{NUM_EPOCHS}")
+    performance_logger = PerformanceLogger()
 
-    #     peft_model.train()  # Training mode
-    #     running_loss = 0
-    #     correct_predictions = 0
-    #     total_predictions = 0
+    for epoch in range(NUM_EPOCHS):
+        logger.info(f"Epoch {epoch + 1}/{NUM_EPOCHS}")
 
-    #     for batch_idx, (pixel_values, labels) in tqdm(
-    #         enumerate(train_loader),
-    #         total=len(train_loader),
-    #         desc=f"Epoch {epoch+1}/{NUM_EPOCHS}",
-    #         unit="batch"
-    #     ):
-    #         # Move data to the device (GPU/CPU)
-    #         pixel_values, labels = pixel_values.to(device), labels.to(device)
+        peft_model.train()  # Training mode
+        running_loss = 0
+        correct_predictions = 0
+        total_predictions = 0
 
-    #         optimizer.zero_grad()  # Clear gradients from the previous step
+        progress_bar = tqdm(
+            enumerate(train_loader),
+            total=len(train_loader),
+            desc=f"Epoch {epoch+1}/{NUM_EPOCHS}",
+            unit="batch",
+            leave=True
+        )
 
-    #         # Forward pass
-    #         outputs = peft_model.vision_model(pixel_values=pixel_values)
-    #         logits = outputs.pooler_output
-    #         loss = criterion(logits, labels)
+        for batch_idx, (pixel_values, labels) in progress_bar:
+            # Move data to the device (GPU/CPU)
+            pixel_values, labels = pixel_values.to(device), labels.to(device)
 
-    #         # Backward pass and optimization
-    #         loss.backward()
-    #         optimizer.step()
-    #         running_loss += loss.item()
+            optimizer.zero_grad()  # Clear gradients from the previous step
 
-    #         # Calculate accuracy
-    #         _, predicted = torch.max(logits, 1)
-    #         correct_predictions += (predicted == labels).sum().item()
-    #         total_predictions += labels.size(0)
+            # Forward pass
+            outputs = peft_model.vision_model(pixel_values=pixel_values)
+            logits = outputs.pooler_output
+            loss = criterion(logits, labels)
 
-    #         # Log batch performance every few batches
-    #         if (batch_idx + 1) % log_interval == 0:
-    #             avg_loss = running_loss / (batch_idx + 1)
-    #             accuracy = (correct_predictions / total_predictions) * 100
-    #             logger.info(
-    #                 f"Epoch {epoch + 1}, Batch {batch_idx + 1}/{len(train_loader)}"
-    #                 f" - Loss: {avg_loss:.4f}, Accuracy: {accuracy:.2f}%"
-    #             )
+            # Backward pass and optimization
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
 
-    #     # Evaluate on validation set
-    #     val_loss, val_accuracy = evaluate(peft_model, valid_loader, criterion, device)
-    #     logger.info(f"Epoch {epoch + 1}/{NUM_EPOCHS}, Training Loss: {running_loss / len(train_loader):.4f}, ")
-    #     logger.info(f"Validation - Loss: {val_loss:.4f}, Accuracy: {val_accuracy:.4f}")
+            # Calculate accuracy
+            _, predicted = torch.max(logits, 1)
+            correct_predictions += (predicted == labels).sum().item()
+            total_predictions += labels.size(0)
 
-    #     # Step the scheduler
-    #     scheduler.step(val_loss)
+            # Log batch performance every few batches
+            if (batch_idx + 1) % log_interval == 0:
+                # Batch metrics
+                batch_loss = loss.item()
+                batch_accuracy = correct_predictions / labels.size(0) * 100
+                
+                # Average metrics so far
+                avg_loss = running_loss / (batch_idx + 1)
+                avg_accuracy = (correct_predictions / total_predictions) * 100
 
-    #     # Check for early stopping
-    #     early_stopping(val_loss)
-    #     if early_stopping.early_stop:
-    #         print("Early stopping triggered. Stopping training.")
-    #         break
+                progress_bar.set_postfix(
+                    loss=f"{avg_loss:.4f}",
+                    accuracy=f"{avg_accuracy:.2f}%"
+                )
+                
+                performance_logger.log_batch(
+                    epoch=epoch + 1,
+                    batch=batch_idx + 1,
+                    batch_loss=batch_accuracy,
+                    batch_accuracy=batch_loss,
+                    avg_loss=avg_loss,
+                    avg_accuracy=avg_accuracy
+                )
 
-    # # Save the model after training finishes
-    # print("Training complete. Saving the model...")
-    # peft_model.save_pretrained(SIGLIP_PEFT_ADAPTER)
-    # print(f"PEFT-tuned model saved to: {SIGLIP_PEFT_ADAPTER}")
+        # Evaluate on validation set
+        val_loss, val_accuracy = evaluate(peft_model, valid_loader, criterion, device)
+        logger.info(
+            f"Epoch {epoch + 1}/{NUM_EPOCHS}, Training Loss: {running_loss / len(train_loader):.4f}, "
+        )
+        logger.info(f"Validation - Loss: {val_loss:.4f}, Accuracy: {val_accuracy:.4f}")
+
+        # Log enf-of-epoch performance.
+        avg_loss = running_loss / len(train_loader)
+        avg_accuracy = (correct_predictions / total_predictions) * 100
+        
+        performance_logger.log_epoch(
+            epoch=epoch + 1,
+            avg_loss=avg_loss,
+            avg_accuracy=avg_accuracy,
+            val_loss=val_loss,
+            val_accuracy=val_accuracy
+        )
+
+        # Step the scheduler
+        scheduler.step(val_loss)
+
+        # Check for early stopping
+        early_stopping(val_loss)
+        if early_stopping.early_stop:
+            print("Early stopping triggered. Stopping training.")
+            break
+
+    # Save training logs.
+    performance_logger.save_to_csv("training_log.csv")
+
+    # Save the model after training finishes
+    print("Training complete. Saving the model...")
+    peft_model.save_pretrained(SIGLIP_PEFT_ADAPTER)
+    print(f"PEFT-tuned model saved to: {SIGLIP_PEFT_ADAPTER}")

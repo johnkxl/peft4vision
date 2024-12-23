@@ -1,7 +1,7 @@
 from pathlib import Path
 from pandas import DataFrame
 
-from datasets import Dataset, load_dataset
+from datasets import Dataset, DatasetDict, load_dataset
 from sklearn.model_selection import train_test_split
 
 
@@ -11,7 +11,7 @@ def split_dataset(
     
     ) -> tuple[DataFrame, DataFrame]:
     """
-    Split a dataset into training and validation sets, with optional grouping by a specific column.
+    Split a DataFrame into training and validation sets, with optional grouping by a specific column.
 
     Args:
         df (DataFrame): The input dataset.
@@ -31,7 +31,7 @@ def split_dataset(
         # Perform train-test split if the repensentatives.
         train_ids, valid_ids = train_test_split(
             grouped_df[grouper],
-            test_size=1-train_size,
+            train_size=train_size,
             stratify=grouped_df[target],
             random_state=42
         )
@@ -43,9 +43,9 @@ def split_dataset(
         # Standard split
         X_train, X_val = train_test_split(
             df,
-            test_size=1-train_size,
-            stratify=df[target],  # Stratify based on target
-            random_state=42       # For reproducibility
+            train_size=train_size,
+            stratify=df[target],    # Stratify based on target
+            random_state=42         # For reproducibility
         )
 
     print("Training set size:", X_train.shape)
@@ -56,11 +56,22 @@ def split_dataset(
 
 def load_dataset_splits(
         
-        ds_path: Path, target: str, test_size: float, grouper: str =None
+        ds_path: Path, target: str, test_size: float, grouper: str = None
     
     ) -> tuple[Dataset, Dataset]:
-    
-    dataset: Dataset = load_dataset('parquet', data_files=[str(ds_path)])
+    """
+    Split a dataset into training and validation sets, with optional grouping by a specific column.
+
+    Args:
+        ds_path (Path): The input dataset parquet file path.
+        target (str): The column name representing the target variable for stratification.
+        test_size (float): Proportion of the data to use for testing.
+        grouper (str, optional): Column name to group by for splitting. Defaults to None.
+
+    Returns:
+        tuple[Dataset, Dataset]: Training and validation Datasets.
+    """
+    dataset: DatasetDict = load_dataset('parquet', data_files=[str(ds_path)])
 
     train_ds: Dataset
     valid_ds: Dataset
