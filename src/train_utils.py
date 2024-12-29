@@ -115,7 +115,6 @@ class PerformanceLogger:
     def log_batch(self, epoch, batch, batch_loss, batch_accuracy, avg_loss, avg_accuracy):
         """Log batch-wise metrics."""
         self.log_performance(
-            self,
             epoch=epoch,
             batch=batch,
             batch_loss=batch_loss,
@@ -129,7 +128,6 @@ class PerformanceLogger:
     def log_epoch(self, epoch, avg_loss, avg_accuracy, val_loss, val_accuracy):
         """Log end-of-epoch metrics."""
         self.log_performance(
-            self,
             epoch=epoch,
             batch=None,  # No batch info for epoch-level logging
             batch_loss=None,
