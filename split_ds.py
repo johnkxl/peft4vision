@@ -1,4 +1,5 @@
 import json
+import numpy as np
 from pathlib import Path
 from pandas import DataFrame, read_parquet
 from argparse import ArgumentParser, RawTextHelpFormatter
@@ -41,7 +42,7 @@ def main():
     feature_subset = ['image', TARGET]
     
     # Map labels to [0, c-1], c:=number of target classes to match embeddeding format requirements
-    label2id = {label: i for i, label in enumerate(df[TARGET].unique())}
+    label2id = create_label2id_dict(df, TARGET)
     df[TARGET] = df[TARGET].map(label2id)
     with open(OUTDIR / "label2id.json", 'w') as outfile:
         json.dump(label2id, outfile)
@@ -76,6 +77,23 @@ def main():
     print(f"Saved {100 * (1 - TRAIN_SIZE):.2f}% to test_image_target.parquet")
 
     return
+
+
+def create_label2id_dict(df: DataFrame, target: str) -> dict[str|int, int]:
+    """
+    Create dictionary mapping of target labels to ids.
+
+    Args:
+        df (DataFrame): The input DataFrame.
+        target (str): The name of the target variable column.
+    
+    Returns:
+        dict[str|int, int]: dictionary mapping keys of type str or int to int IDs.
+    """
+    if df[target].dtype == np.int64:
+        return {int(label): i for i, label in enumerate(df[TARGET].unique())}
+    
+    return {label: i for i, label in enumerate(df[TARGET].unique())}
 
 
 if __name__ == "__main__":
