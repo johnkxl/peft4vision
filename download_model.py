@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import cast
 
-from transformers import AutoModel, AutoProcessor
+from transformers import AutoModel, AutoProcessor, AutoModelForImageClassification, AutoImageProcessor
 from transformers.models.siglip.modeling_siglip import SiglipModel
 from transformers.models.siglip.processing_siglip import SiglipProcessor
 from peft import PeftModel
@@ -57,6 +57,26 @@ def load_siglip_offline(peft=False) -> tuple[SiglipModel, SiglipProcessor]:
     model = cast(SiglipModel, model)
 
     return model, tokenizer
+
+
+def load_siglip_for_image_classification_offline(
+    label2id: dict,
+    id2label: dict,
+    peft=False
+) -> tuple[AutoModelForImageClassification, AutoImageProcessor]:
+    model = AutoModelForImageClassification.from_pretrained(
+        SIGLIP_MODEL,
+        local_files_only=True,
+        label2id=label2id,
+        id2label=id2label
+    )
+    processor = AutoImageProcessor.from_pretrained(SIGLIP_PREPROCESSOR, local_files_only=True)
+
+    if peft:
+        # Wrap the model with the PEFT adapter.
+        model = PeftModel.from_pretrained(model, SIGLIP_PEFT_ADAPTER)
+    
+    return model, processor
 
 
 if __name__ == "__main__":
