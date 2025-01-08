@@ -79,16 +79,21 @@ def main():
     return
 
 
-def create_label2id_dict(df: DataFrame, target: str) -> dict[str|int, int]:
+def create_label2id_dict(df: DataFrame, target: str) -> dict[str | int, int]:
     """
-    Create dictionary mapping of target labels to ids.
+    Create `dict` mapping of target labels to IDs.
 
-    Args:
-        df (DataFrame): The input DataFrame.
-        target (str): The name of the target variable column.
+    Parameters
+    ----------
+    df: pandas DataFrame
+        The input DataFrame.
+    target: str 
+        The name of the target variable column.
     
-    Returns:
-        dict[str|int, int]: dictionary mapping keys of type str or int to int IDs.
+    Returns
+    -------
+    dict[str | int, int]
+        `dict` mapping keys of type `str` or `int` to `int` IDs.
     """
     if df[target].dtype == np.int64:
         return {int(label): i for i, label in enumerate(df[target].unique())}
