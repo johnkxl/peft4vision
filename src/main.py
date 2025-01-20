@@ -18,6 +18,7 @@ from src.train_utils import (
     ImageDataset,
     EarlyStopping,
     evaluate,
+    get_logits,
     print_trainable_parameters,
     PerformanceLogger
 )
@@ -152,8 +153,7 @@ def main():
             optimizer.zero_grad()  # Clear gradients from the previous step
 
             # Forward pass
-            outputs = peft_model.vision_model(pixel_values=pixel_values)
-            logits = outputs.pooler_output
+            logits = get_logits(peft_model, pixel_values)
             loss = criterion(logits, labels)
 
             # Backward pass and optimization
@@ -162,7 +162,7 @@ def main():
             running_loss += loss.item()
 
             # Calculate accuracy
-            _, predicted = torch.max(logits, 1)
+            _, predicted = torch.max(logits, 1)  # Class indices of logits per object
             correct_predictions += (predicted == labels).sum().item()
             total_predictions += labels.size(0)
 
@@ -197,7 +197,7 @@ def main():
         )
         logger.info(f"Validation - Loss: {val_loss:.4f}, Accuracy: {val_accuracy:.4f}")
 
-        # Log enf-of-epoch performance.
+        # Log end-of-epoch performance.
         avg_loss = running_loss / len(train_loader)
         avg_accuracy = (correct_predictions / total_predictions) * 100
         

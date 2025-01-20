@@ -63,7 +63,25 @@ def load_siglip_for_image_classification_offline(
     label2id: dict,
     id2label: dict,
     peft=False
-) -> tuple[AutoModelForImageClassification, AutoImageProcessor]:
+) -> tuple[AutoModelForImageClassification | PeftModel, AutoImageProcessor]:
+    """
+    Returns SigLIP model with classification head and image processor. 
+    Specifying `peft=True` wraps the model with the PEFT LoRA adapter.
+
+    Parameters
+    ----------
+    label2id: dict
+        Dictionary mapping target class labels to integers in dataset.
+    id2label: dict
+        Dictionary mapping intergers in dataset to target class lables.
+    peft: bool, default=False
+        Wrap the model with PEFT adapter if `True`.
+    
+    Returns
+    -------
+    tuple[AutoModelForImageClassification | PeftModel, AutoImageProcessor]
+
+    """
     model = AutoModelForImageClassification.from_pretrained(
         SIGLIP_MODEL,
         local_files_only=True,

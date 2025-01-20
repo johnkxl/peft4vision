@@ -3,16 +3,18 @@ import torch
 from PIL import Image
 from io import BytesIO
 
+from torch import Tensor
+
 
 class ImageDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, processor):
         self.dataset = dataset
         self.processor = processor
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> tuple[Tensor, Tensor]:
         row = self.dataset[idx]
         image = row['image']
         label = row['target']
@@ -62,18 +64,26 @@ class EarlyStopping:
 
 def print_trainable_parameters(model) -> None:
         trainable_params = 0
-        all_param = 0
+        all_params = 0
         for _, param in model.named_parameters():
-            all_param += param.numel()
+            all_params += param.numel()
             if param.requires_grad:
                 trainable_params += param.numel()
         print(
-            f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param:.2f}"
+            f"trainable params: {trainable_params} || all params: {all_params} || trainable%: {100 * trainable_params / all_params:.2f}"
         )
 
 
 def evaluate(peft_model, valid_loader, criterion, device) -> tuple[float, float]:
-    """Evaluate the model on the validation set."""
+    """
+    Evaluate the model on the validation set. Returns a tuple of validation loss and validation accuracy.
+
+    Returns
+    -------
+    valid_loss: float
+    valid_accuracy: float
+    
+    """
     peft_model.eval()  # Set the model to evaluation mode
     val_loss = 0
     correct = 0
@@ -81,22 +91,49 @@ def evaluate(peft_model, valid_loader, criterion, device) -> tuple[float, float]
 
     with torch.no_grad():
         for pixel_values, labels in valid_loader:
+            # Load batch to device
             pixel_values = pixel_values.to(device)
             labels = labels.to(device)
 
             # Forward pass
-            outputs = peft_model.vision_model(pixel_values=pixel_values)
-            loss = criterion(outputs.pooler_output, labels)
+            logits = get_logits(peft_model, pixel_values)
+            loss = criterion(logits, labels)
             val_loss += loss.item()
 
             # Calculate accuracy
-            _, predicted = torch.max(outputs.pooler_output, 1)
+            _, predicted = torch.max(logits, 1)  # Class indices of max logits per object
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
     val_accuracy = correct / total
     val_loss = val_loss / len(valid_loader)
     return val_loss, val_accuracy
+
+
+def get_logits(model, pixel_values: Tensor) -> Tensor:
+    """
+    Returns the logits obtained from the `pixel_values` passed to the `model`.
+
+    Parameters
+    ----------
+    model: a model inheriting from AutoModelForImageClassification
+        The vision model used for inference.
+    pixel_values: Tensor
+        A vector of images whose classes are to be inferred.
+    
+    Returns
+    -------
+    logits: Tensor
+        The logits for each of the n target classes.
+
+    """
+    outputs = model.vision_model(pixel_values=pixel_values)
+
+    image_embeddings = outputs.pooler_output
+
+    logits = model.classifier(image_embeddings)
+
+    return logits
 
 
 class PerformanceLogger:

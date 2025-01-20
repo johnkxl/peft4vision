@@ -12,7 +12,7 @@ import numpy as np
 from tqdm import tqdm
 from datasets import Dataset
 
-from src.train_utils import ImageDataset
+from src.train_utils import ImageDataset, get_logits
 from download_model import load_siglip_for_image_classification_offline
 
 parser = ArgumentParser(description="Evaluate PEFT-tuned SigLIP model on a test set.")
@@ -21,7 +21,7 @@ parser.add_argument('--df', type=Path, required=True, help='Dataset path of test
 parser.add_argument('--peft', type=bool, default=False, help="Evalute the performance on the PEFT-tuned model if `True`.")
 parser.add_argument('--batch_size', type=int, default=16, help='(Optional) Batch size. Default 16.')
 parser.add_argument('--label2id', type=Path, default=None, help='(Optional) JSON file containing dictionary mapping target class labels to intengers 0 to n_classes - 1.')
-parser.add_argument('--out', type=str, required=True, help='JSON file to save evaluation metrics.')
+parser.add_argument('--out', type=str, required=True, help='File with .pkl extension to save evaluation metrics.')
 
 args = parser.parse_args()
 
@@ -112,13 +112,11 @@ def evaluate_holdout_set(model, test_loader, device, class_names=None):
             labels = labels.to(device)
 
             # Forward pass
-            outputs = model.vision_model(pixel_values=pixel_values)
-            vision_embeddings = outputs.pooler_output
-            logits = model.classifier(vision_embeddings)
+            logits = get_logits(model=model, pixel_values=pixel_values)
 
             _, predicted = torch.max(logits, 1)  # Predicted class indices
 
-            # Store logits, predictions, and labels
+            # Store logits, predictions, and labels in CPU memory.
             all_logits.append(logits.cpu().numpy())
             all_predictions.append(predicted.cpu().numpy())
             all_labels.append(labels.cpu().numpy())
