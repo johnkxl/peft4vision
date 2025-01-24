@@ -1,5 +1,6 @@
 from argparse import ArgumentParser, RawTextHelpFormatter
 from pathlib import Path
+import json
 
 import logging
 from tqdm import tqdm
@@ -13,7 +14,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from peft import LoraConfig, get_peft_model
 
 from src.dataset import load_dataset_splits
-from download_model import load_siglip_offline, SIGLIP_PEFT_ADAPTER
+from download_model import load_siglip_for_image_classification_offline, SIGLIP_PEFT_ADAPTER
 from src.train_utils import (
     ImageDataset,
     EarlyStopping,
@@ -38,6 +39,8 @@ parser.add_argument('--num_epochs', type=int, default=5, help='Number of epochs 
 parser.add_argument('--learn_rate', type=float, default=5e-5, help='Learning rate. Set to 5e-5 by default.')
 parser.add_argument('--batch_size', type=int, default=16, help='Batch size. Default 16.')
 parser.add_argument('--log_interval', type=int, default=10, help='Performance reporting interval. Report on training performance every `log_interval` batches. Default 10.')
+parser.add_argument('--log-to', type=Path, default='training_log.csv', help='Name of the file to save the training logs.')
+parser.add_argument('--label2id', type=Path, required=True, help="JSON file mapping target labels to their integer values in the training set.")
 args = parser.parse_args()
 
 DS_PATH = args.train_ds.resolve()
@@ -67,7 +70,14 @@ def main():
     train_ds, valid_ds = load_dataset_splits(DS_PATH, 'target', TEST_SIZE, GROUPER)
 
     # Load base model and processor
-    base_model, processor = load_siglip_offline()
+    label2id: dict = json.load(open(args.label2id))
+    id2label: dict = {i:label for label,i in label2id.items()}
+    
+    base_model, processor = load_siglip_for_image_classification_offline(
+        label2id=label2id,
+        id2label=id2label,
+        peft=False  # since we are training a PEFT adapter.
+    )
 
     # Freeze most of the model's parameters
     for param in base_model.parameters():
@@ -219,7 +229,7 @@ def main():
             break
 
     # Save training logs.
-    performance_logger.save_to_csv("training_log.csv")
+    performance_logger.save_to_csv(args.log_to)
 
     # Save the model after training finishes
     print("Training complete. Saving the model...")

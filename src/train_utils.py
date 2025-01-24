@@ -1,8 +1,8 @@
-import torch
-
 from PIL import Image
 from io import BytesIO
+from pandas import DataFrame
 
+import torch
 from torch import Tensor
 
 
@@ -24,9 +24,7 @@ class ImageDataset(torch.utils.data.Dataset):
             image = Image.open(BytesIO(image)).convert("RGB")
 
         processed = self.processor(
-            text=None,
             images=image,
-            padding="max_length",
             return_tensors="pt"
         )
         return processed["pixel_values"].squeeze(0), label
@@ -187,14 +185,12 @@ class PerformanceLogger:
 
     def save_to_csv(self, file_path):
         """Save the logged data to a CSV file."""
-        from pandas import DataFrame
         df = DataFrame(self.log_data)
         df.to_csv(file_path, index=False)
         print(f"Saved performance log to {file_path}")
 
     def save_to_parquet(self, file_path):
         """Save the logged data to a Parquet file."""
-        from pandas import DataFrame
         df = DataFrame(self.log_data)
         df.to_parquet(file_path, index=False)
         print(f"Saved performance log to {file_path}")
