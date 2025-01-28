@@ -18,7 +18,7 @@ from download_model import load_siglip_for_image_classification_offline
 parser = ArgumentParser(description="Evaluate PEFT-tuned SigLIP model on a test set.")
 
 parser.add_argument('--df', type=Path, required=True, help='Dataset path of test set. Must be a .parquet file with only two columns, "image" and "target".')
-parser.add_argument('--peft', type=bool, default=False, help="Evalute the performance on the PEFT-tuned model if `True`.")
+parser.add_argument('--peft', action='store_true', help="Evalute the performance on the PEFT-tuned model if included.")
 parser.add_argument('--batch_size', type=int, default=16, help='(Optional) Batch size. Default 16.')
 parser.add_argument('--label2id', type=Path, default=None, help='(Optional) JSON file containing dictionary mapping target class labels to intengers 0 to n_classes - 1.')
 parser.add_argument('--out', type=str, required=True, help='File with .pkl extension to save evaluation metrics.')
@@ -102,7 +102,7 @@ def evaluate_holdout_set(model, test_loader, device, class_names=None):
 
     all_labels = []
     all_predictions = []
-    all_logits = []
+    all_probs = []
 
     with torch.no_grad():  # Disable gradient computation for inference
         for batch in tqdm(test_loader, desc="Evaluating on test set"):
@@ -113,16 +113,17 @@ def evaluate_holdout_set(model, test_loader, device, class_names=None):
 
             # Forward pass
             logits = get_logits(model=model, pixel_values=pixel_values)
+            probs = torch.softmax(logits, 1)  # Class probabilities
 
-            _, predicted = torch.max(logits, 1)  # Predicted class indices
+            _, predicted = torch.max(probs, 1)  # Predicted class indices
 
-            # Store logits, predictions, and labels in CPU memory.
-            all_logits.append(logits.cpu().numpy())
+            # Store probabilities, predictions, and labels in CPU memory.
+            all_probs.append(probs.cpu().numpy())
             all_predictions.append(predicted.cpu().numpy())
             all_labels.append(labels.cpu().numpy())
 
-    # Flatten collected logits, predictions, and labels
-    all_logits = np.concatenate(all_logits, axis=0)
+    # Flatten collected proababilities, predictions, and labels
+    all_probs = np.concatenate(all_probs, axis=0)
     all_predictions = np.concatenate(all_predictions, axis=0)
     all_labels = np.concatenate(all_labels, axis=0)
 
@@ -133,7 +134,14 @@ def evaluate_holdout_set(model, test_loader, device, class_names=None):
     metrics_dict['accuracy'] = (all_predictions == all_labels).mean()
 
     # Classification Report (Precision, Recall, F1-Score)
-    report = classification_report(all_labels, all_predictions, labels=class_names, target_names=class_names, output_dict=True)
+    NUM_CLASSES = len(class_names)
+    report = classification_report(
+        y_true=all_labels,
+        y_pred=all_predictions,
+        labels=list(range(NUM_CLASSES)),
+        target_names=class_names,
+        output_dict=True
+    )
     metrics_dict.update(report)
 
     # Confusion Matrix
@@ -141,7 +149,7 @@ def evaluate_holdout_set(model, test_loader, device, class_names=None):
 
     # AUROC (if binary or one-vs-rest for multiclass)
     try:
-        metrics_dict['auroc'] = roc_auc_score(all_labels, all_logits, multi_class="ovr")
+        metrics_dict['auroc'] = roc_auc_score(all_labels, all_probs, multi_class="ovr")
     except ValueError:
         metrics_dict['auroc'] = "AUROC not applicable for this setup"
 
