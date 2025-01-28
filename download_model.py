@@ -11,6 +11,7 @@ ROOT = Path(__file__).parent
 SIGLIP_PATH = ROOT / "downloaded_models/siglip_so400m_patch14_384/"
 
 SIGLIP_PEFT_ADAPTER = SIGLIP_PATH / "peft_adapter"
+SIGLIP_PEFT_TRAINED = SIGLIP_PATH / "full_peft_trained"
 
 SIGLIP_MODEL = SIGLIP_PATH / "model"
 SIGLIP_MODEL_FILES = [
@@ -35,7 +36,7 @@ def download_siglip_model() -> None:
     print(f"Saved model to {SIGLIP_MODEL}")
 
     processor = cast(
-        SiglipProcessor, AutoProcessor.from_pretrained("google/siglip-so400m-patch14-384")
+        SiglipProcessor, AutoProcessor.from_pretrained("google/siglip-so400m-patch14-384", use_fast=True)
     )
     processor.save_pretrained(SIGLIP_PREPROCESSOR)
     print(f"Saved preprocessor to {SIGLIP_PREPROCESSOR}")
@@ -66,7 +67,7 @@ def load_siglip_for_image_classification_offline(
 ) -> tuple[AutoModelForImageClassification | PeftModel, AutoImageProcessor]:
     """
     Returns SigLIP model with classification head and image processor. 
-    Specifying `peft=True` wraps the model with the PEFT LoRA adapter.
+    Specifying `peft=True` loads the model with the PEFT LoRA adapter.
 
     Parameters
     ----------
@@ -75,24 +76,22 @@ def load_siglip_for_image_classification_offline(
     id2label: dict
         Dictionary mapping intergers in dataset to target class lables.
     peft: bool, default=False
-        Wrap the model with PEFT adapter if `True`.
+        Load the model saved with the PEFT adapter if `True`.
     
     Returns
     -------
     tuple[AutoModelForImageClassification | PeftModel, AutoImageProcessor]
 
     """
+    model_path = SIGLIP_PEFT_TRAINED if peft else SIGLIP_MODEL
+
     model = AutoModelForImageClassification.from_pretrained(
-        SIGLIP_MODEL,
+        model_path,
         local_files_only=True,
         label2id=label2id,
         id2label=id2label
     )
     processor = AutoImageProcessor.from_pretrained(SIGLIP_PREPROCESSOR, local_files_only=True)
-
-    if peft:
-        # Wrap the model with the PEFT adapter.
-        model = PeftModel.from_pretrained(model, SIGLIP_PEFT_ADAPTER)
     
     return model, processor
 
