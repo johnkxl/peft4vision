@@ -14,7 +14,7 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from peft import LoraConfig, get_peft_model
 
 from src.dataset import load_dataset_splits
-from download_model import load_siglip_for_image_classification_offline, SIGLIP_PEFT_ADAPTER
+from download_model import load_siglip_for_image_classification_offline, SIGLIP_PEFT_TRAINED
 from src.train_utils import (
     ImageDataset,
     EarlyStopping,
@@ -233,5 +233,7 @@ def main():
 
     # Save the model after training finishes
     print("Training complete. Saving the model...")
-    peft_model.save_pretrained(SIGLIP_PEFT_ADAPTER)
-    print(f"PEFT-tuned model saved to: {SIGLIP_PEFT_ADAPTER}")
+    # Merge and save the PEFT-tuned model with SigLip base
+    peft_model = peft_model.merge_and_unload()
+    peft_model.save_pretrained(SIGLIP_PEFT_TRAINED)
+    print(f"PEFT-tuned model saved to: {SIGLIP_PEFT_TRAINED}")
